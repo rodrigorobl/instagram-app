@@ -1,30 +1,67 @@
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import ReactLoading from "react-loading";
 import { ThemeProvider } from "styled-components";
+
 import { Header } from "./components/header";
 import { NavBar } from "./components/navbar";
 import { Stories } from "./components/stories";
-import { Flex, Screen } from "./style";
+import { Button, Flex, Screen, Typography } from "./style";
 import { darkTheme, lightTheme } from "./style/theme";
 import { Publications } from "./components/publications";
+import { getPhotos } from "./services/photos";
+
 
 function App() {
-  const [theme, setTheme] = useState('light')
+  const PHOTOS_PER_PAGE = 8;
+
+  const [theme, setTheme] = useState("light");
+  const [photos, setPhotos] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [photosPerPage, setPhotosPerPage] = useState(PHOTOS_PER_PAGE);
+
+  const releaseLoading = () => setIsLoading(false);
 
   const themeToggler = () => {
-    theme === 'light' ? setTheme('dark') : setTheme('light')
+    theme === "light" ? setTheme("dark") : setTheme("light");
+  };
+
+  const handlePhotosPerPage = () => {
+    setPhotosPerPage(photosPerPage + PHOTOS_PER_PAGE)
+    //setPhotosPerPage((prevState) => prevState + PHOTOS_PER_PAGE)
+  }
+  
+  async function fetchPhotos() {
+    setIsLoading(true);
+    const data = await getPhotos(photosPerPage, releaseLoading);
+    setPhotos(data);
   }
 
+  useEffect(() => {
+    fetchPhotos();
+  }, [photosPerPage]);
 
   return (
-    <ThemeProvider theme={theme === 'light' ? lightTheme : darkTheme}>
+    <ThemeProvider theme={theme === "light" ? lightTheme : darkTheme}>
       <Screen>
         <NavBar themeToggler={themeToggler} theme={theme} />
 
         <Flex gap="2px">
           <Header />
-          <Stories />
-          <Publications />
+          <Stories photos={photos} />
+          <Publications photos={photos} />
+
+          {isLoading ?(
+            <ReactLoading
+              type="spinningBubbles"
+              color={theme.textPrimary}
+              height={20}
+              width={20}
+            />
+          ) : (
+            <Button onClick={handlePhotosPerPage}>
+              <Typography>Ver mais</Typography>
+            </Button>
+          )}
         </Flex>
       </Screen>
     </ThemeProvider>
